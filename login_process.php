@@ -1,3 +1,4 @@
+
 <?php
 require_once __DIR__ . '/includes/auth.php';
 
@@ -6,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$email    = trim($_POST['email'] ?? '');
+$email = trim($_POST['email'] ?? '');
 $password = $_POST['password'] ?? '';
 
 if ($email === '' || $password === '') {
@@ -15,11 +16,27 @@ if ($email === '' || $password === '') {
     exit;
 }
 
-$stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
-$stmt->execute([$email]);
-$user = $stmt->fetch();
+try {
+    $stmt = $pdo->prepare(
+        "SELECT id, name, email, password, role, status
+         FROM users
+         WHERE email = ?
+         LIMIT 1"
+    );
 
-if (!$user || !password_verify($password, $user['password'])) {
+    $stmt->execute([$email]);
+    $user = $stmt->fetch();
+
+} catch (PDOException $e) {
+    error_log('Login database query failed.');
+    http_response_code(500);
+    exit('Something went wrong. Please try again later.');
+}
+
+if (
+    !$user ||
+    !password_verify($password, $user['password'])
+) {
     header('Location: index.php?error=1');
     exit;
 }
@@ -29,7 +46,22 @@ if ($user['status'] !== 'active') {
     exit;
 }
 
-// Successful login - store session and redirect based on role.
+$allowedRoles = [
+    'admin',
+    'doctor',
+    'receptionist',
+    'accountant'
+];
+
+if (!in_array($user['role'], $allowedRoles, true)) {
+    error_log('Login rejected: invalid user role.');
+    header('Location: index.php?error=1');
+    exit;
+}
+
+// Regenerate the session ID after successful authentication.
+session_regenerate_id(true);
+
 $_SESSION['user_id']   = $user['id'];
 $_SESSION['user_name'] = $user['name'];
 $_SESSION['email']     = $user['email'];
