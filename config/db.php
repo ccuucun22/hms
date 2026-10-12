@@ -5,9 +5,9 @@
  */
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'carepoint-hms');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_NAME', 'u972875098_carepoint');
+define('DB_USER', 'u972875098_carepoint');
+define('DB_PASS', '@o1Wm@CW9');
 
 try {
     $pdo = new PDO(
